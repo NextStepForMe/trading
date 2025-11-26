@@ -32,8 +32,67 @@ const verifyOtp = async(req,res)=>{
       }
 
       await OTP.findOneAndDelete({ otpRecord.id });
-      
+
+
+      switch(otp_type){
+        case "phone":
+            await User.findByIdAndUpdate({email},{phone_number:data});
+            break;
+        
+        case "email":
+                
+                break;
+        
+
+        case "rest_pin":
+            if(data.length!==4){
+              throw new badRequestError("pin length must be equal to four");
+            }
+            await User.updatePIN(email,data);
+            break;
+        
+        case "reset_password":
+            await User.updatePassword(email,data);
+            break;
+
+        default:
+            throw new badRequestError(`invalid otp type`);
+      }
    
  }
 
 
+const user = await User.findOne({email});
+if(otp_type==="email" && !user ){
+  const register_token = jwt.sign(
+    {email},
+    process.env.REGISTER_SECRET,
+    {expiresIn: process.env.REGISTER_SECRET_expiry}
+  );
+
+  return res.status(StatusCodes.OK).json({
+    msg:`${register_token}`,
+  });
+
+
+  res.status(StatusCodes.OK).json({msg:"success veryfied otp"});
+}
+
+
+
+
+
+
+const sendOTP = async(req,res)=>{
+    const {email , otp_type}= req.body;
+    if(!email || !otp_type){
+        throw new badRequestError("provide all values")
+    }
+
+
+    const user = await User.findOne({email});
+    if(!user && otp_type == 'phone'){
+        throw new badRequestError("no user found");
+    }
+    if(otp_type)
+}
